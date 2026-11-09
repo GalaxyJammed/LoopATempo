@@ -35,6 +35,20 @@ val MIGRATION_4_5 = object : Migration(4, 5) {
     }
 }
 
+val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        if (!db.hasColumn("habits", "reminderMinutes")) {
+            db.execSQL("ALTER TABLE habits ADD COLUMN reminderMinutes INTEGER")
+        }
+        if (!db.hasColumn("settings", "reminderEnabled")) {
+            db.execSQL("ALTER TABLE settings ADD COLUMN reminderEnabled INTEGER NOT NULL DEFAULT 1")
+        }
+        if (!db.hasColumn("settings", "reminderMinutes")) {
+            db.execSQL("ALTER TABLE settings ADD COLUMN reminderMinutes INTEGER NOT NULL DEFAULT 1200")
+        }
+    }
+}
+
 private fun SupportSQLiteDatabase.hasColumn(table: String, column: String): Boolean =
     query("PRAGMA table_info($table)").use { cursor ->
         val nameIndex = cursor.getColumnIndexOrThrow("name")

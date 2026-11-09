@@ -13,7 +13,8 @@ data class HabitEntity(
     val packageName: String?,
     val thresholdMinutes: Int?,
     val createdAt: Long,
-    val iconKey: String? = null
+    val iconKey: String? = null,
+    val reminderMinutes: Int? = null
 )
 
 @Entity(
@@ -41,5 +42,7 @@ data class SettingsEntity(
     val defaultThresholdMinutes: Int = 5,
     val darkTheme: Boolean = true,
     @ColumnInfo(defaultValue = "0") val notificationsEnabled: Boolean = false,
-    @ColumnInfo(defaultValue = "0") val keepAlive: Boolean = true
+    @ColumnInfo(defaultValue = "0") val keepAlive: Boolean = true,
+    @ColumnInfo(defaultValue = "1") val reminderEnabled: Boolean = true,
+    @ColumnInfo(defaultValue = "1200") val reminderMinutes: Int = 20 * 60
 )

@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -43,7 +44,9 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.loopatempo.data.LaunchableApp
 import com.example.loopatempo.data.loadLaunchableApps
+import com.example.loopatempo.ui.components.MinuteOfDayPicker
 import com.example.loopatempo.ui.components.ShieldCard
+import com.example.loopatempo.ui.components.formatMinutes
 import com.example.loopatempo.ui.components.lazyScrollbar
 import com.example.loopatempo.ui.icons.IconPicker
 
@@ -91,11 +94,17 @@ fun AddChoiceDialog(
 
 @Composable
 fun CustomTaskDialog(
+    reminderEnabled: Boolean,
+    defaultReminderMinutes: Int,
     onDismiss: () -> Unit,
-    onAdd: (String, String?) -> Unit
+    onAdd: (String, String?, Int?) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
     var iconKey by remember { mutableStateOf<String?>(null) }
+    var customTime by remember { mutableStateOf(false) }
+    var chosenMinutes by remember { mutableStateOf(defaultReminderMinutes) }
+    var pickingTime by remember { mutableStateOf(false) }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Custom task") },
@@ -108,11 +117,44 @@ fun CustomTaskDialog(
                     singleLine = true
                 )
                 IconPicker(selectedKey = iconKey, onSelect = { iconKey = it })
+                if (reminderEnabled) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Custom reminder time",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Switch(checked = customTime, onCheckedChange = { customTime = it })
+                    }
+                    Text(
+                        text = if (customTime) {
+                            "Reminds at ${formatMinutes(chosenMinutes)}"
+                        } else {
+                            "Uses default (${formatMinutes(defaultReminderMinutes)})"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (customTime) {
+                        OutlinedButton(onClick = { pickingTime = true }) {
+                            Text("Set time")
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onAdd(name.trim(), iconKey) },
+                onClick = {
+                    onAdd(
+                        name.trim(),
+                        iconKey,
+                        if (reminderEnabled && customTime) chosenMinutes else null
+                    )
+                },
                 enabled = name.isNotBlank()
             ) {
                 Text("Add")
@@ -122,6 +164,18 @@ fun CustomTaskDialog(
             TextButton(onClick = onDismiss) { Text("Cancel") }
         }
     )
+
+    if (pickingTime) {
+        MinuteOfDayPicker(
+            title = "Reminder time",
+            initialMinutes = chosenMinutes,
+            onConfirm = {
+                chosenMinutes = it
+                pickingTime = false
+            },
+            onDismiss = { pickingTime = false }
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

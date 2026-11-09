@@ -14,8 +14,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.AlertDialog
@@ -37,10 +39,13 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.loopatempo.data.HabitRepository
 import com.example.loopatempo.data.SettingsEntity
+import com.example.loopatempo.notify.StreakNotifier
 import com.example.loopatempo.ui.backup.LocalBackupRows
 import com.example.loopatempo.ui.components.HeaderCard
+import com.example.loopatempo.ui.components.MinuteOfDayPicker
 import com.example.loopatempo.ui.components.SectionDivider
 import com.example.loopatempo.ui.components.SettingRow
+import com.example.loopatempo.ui.components.formatMinutes
 import com.example.loopatempo.ui.components.verticalScrollbar
 import kotlinx.coroutines.launch
 
@@ -56,6 +61,7 @@ fun SettingsScreen(
     val context = LocalContext.current
     val scroll = rememberScrollState()
     var editingThreshold by remember { mutableStateOf(false) }
+    var editingReminderTime by remember { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -65,6 +71,10 @@ fun SettingsScreen(
         }
     }
 
+    val reminderPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { _ -> }
+
     val onNotificationsToggle: (Boolean) -> Unit = { on ->
         val alreadyAllowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
                 ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
@@ -73,6 +83,13 @@ fun SettingsScreen(
             !on -> scope.launch { repository.updateSettings { it.copy(notificationsEnabled = false) } }
             alreadyAllowed -> scope.launch { repository.updateSettings { it.copy(notificationsEnabled = true) } }
             else -> permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    val onReminderToggle: (Boolean) -> Unit = { on ->
+        scope.launch { repository.updateSettings { it.copy(reminderEnabled = on) } }
+        if (on && !StreakNotifier.canPost(context)) {
+            reminderPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 
@@ -130,6 +147,26 @@ fun SettingsScreen(
 
         SectionDivider("Reminders")
         SettingRow(
+            icon = Icons.Filled.Alarm,
+            title = "Habit reminders",
+            subtitle = "Remind me about habits I haven't completed",
+            trailing = {
+                Switch(
+                    checked = current.reminderEnabled,
+                    onCheckedChange = onReminderToggle
+                )
+            }
+        )
+        if (current.reminderEnabled) {
+            SettingRow(
+                icon = Icons.Filled.Schedule,
+                title = "Default reminder time",
+                subtitle = "Used for habits without their own time",
+                onClick = { editingReminderTime = true },
+                trailing = { Text(formatMinutes(current.reminderMinutes)) }
+            )
+        }
+        SettingRow(
             icon = Icons.Filled.Notifications,
             title = "Streak completed alerts",
             subtitle = "Notify me when an app streak is completed",
@@ -153,6 +190,18 @@ fun SettingsScreen(
                 editingThreshold = false
             },
             onDismiss = { editingThreshold = false }
+        )
+    }
+
+    if (editingReminderTime) {
+        MinuteOfDayPicker(
+            title = "Default reminder time",
+            initialMinutes = current.reminderMinutes,
+            onConfirm = { minutes ->
+                scope.launch { repository.updateSettings { it.copy(reminderMinutes = minutes) } }
+                editingReminderTime = false
+            },
+            onDismiss = { editingReminderTime = false }
         )
     }
 }

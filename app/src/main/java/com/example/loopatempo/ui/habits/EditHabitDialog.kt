@@ -2,8 +2,12 @@ package com.example.loopatempo.ui.habits
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -15,12 +19,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.loopatempo.data.HabitEntity
+import com.example.loopatempo.ui.components.MinuteOfDayPicker
+import com.example.loopatempo.ui.components.formatMinutes
 import com.example.loopatempo.ui.icons.IconPicker
 
 @Composable
 fun EditHabitDialog(
     habit: HabitEntity,
     defaultThreshold: Int,
+    defaultReminderMinutes: Int,
+    reminderEnabled: Boolean,
     onSave: (HabitEntity) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -31,6 +39,8 @@ fun EditHabitDialog(
     }
     var thresholdEdited by remember { mutableStateOf(false) }
     var iconKey by remember { mutableStateOf(habit.iconKey) }
+    var reminder by remember { mutableStateOf(habit.reminderMinutes) }
+    var pickingTime by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -57,6 +67,36 @@ fun EditHabitDialog(
                 } else {
                     IconPicker(selectedKey = iconKey, onSelect = { iconKey = it })
                 }
+
+                HorizontalDivider()
+                if (reminderEnabled) {
+                    Text(
+                        text = "Reminder",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = reminder?.let { "Set to ${formatMinutes(it)}" }
+                            ?: "Uses default (${formatMinutes(defaultReminderMinutes)})",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = { pickingTime = true }) {
+                            Text("Set time")
+                        }
+                        if (reminder != null) {
+                            TextButton(onClick = { reminder = null }) {
+                                Text("Use default")
+                            }
+                        }
+                    }
+                } else {
+                    Text(
+                        text = "Enable Habit Reminders",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         },
         confirmButton = {
@@ -75,7 +115,8 @@ fun EditHabitDialog(
                             } else {
                                 null
                             },
-                            iconKey = if (isApp) habit.iconKey else iconKey
+                            iconKey = if (isApp) habit.iconKey else iconKey,
+                            reminderMinutes = if (reminderEnabled) reminder else habit.reminderMinutes
                         )
                     )
                 }
@@ -87,4 +128,16 @@ fun EditHabitDialog(
             TextButton(onClick = onDismiss) { Text("Cancel") }
         }
     )
+
+    if (pickingTime) {
+        MinuteOfDayPicker(
+            title = "Reminder time",
+            initialMinutes = reminder ?: defaultReminderMinutes,
+            onConfirm = { minutes ->
+                reminder = minutes
+                pickingTime = false
+            },
+            onDismiss = { pickingTime = false }
+        )
+    }
 }

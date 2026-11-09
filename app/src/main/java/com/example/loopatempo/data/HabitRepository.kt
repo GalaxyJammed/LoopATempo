@@ -39,14 +39,15 @@ class HabitRepository(private val db: AppDatabase) {
             }
         }
 
-    suspend fun addHabit(name: String, packageName: String?, iconKey: String?) {
+    suspend fun addHabit(name: String, packageName: String?, iconKey: String?, reminderMinutes: Int? = null) {
         db.habitDao().insert(
             HabitEntity(
                 name = name,
                 packageName = packageName,
                 thresholdMinutes = null,
                 createdAt = System.currentTimeMillis(),
-                iconKey = iconKey
+                iconKey = iconKey,
+                reminderMinutes = reminderMinutes
             )
         )
     }

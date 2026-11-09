@@ -96,6 +96,7 @@ fun HomeScreen(
 @Composable
 private fun HabitRow(item: HomeItem, onCheckedChange: (Boolean) -> Unit) {
     val pkg = item.habit.packageName
+    val streakText = if (item.streak > 0) "Streak: ${item.streak} 🔥" else "Streak: ${item.streak}"
     ShieldCard(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
@@ -113,7 +114,7 @@ private fun HabitRow(item: HomeItem, onCheckedChange: (Boolean) -> Unit) {
             Spacer(Modifier.width(8.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(item.habit.name, style = MaterialTheme.typography.titleMedium)
-                Text("Streak: ${item.streak}", style = MaterialTheme.typography.bodyMedium)
+                Text(streakText, style = MaterialTheme.typography.bodyMedium)
             }
         }
     }

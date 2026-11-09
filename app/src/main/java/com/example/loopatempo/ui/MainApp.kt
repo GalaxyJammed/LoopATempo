@@ -54,6 +54,7 @@ fun MainApp(repository: HabitRepository) {
     val allCheckIns by repository.observeCheckIns().collectAsStateWithLifecycle(initialValue = emptyList())
     val settings by repository.observeSettings().collectAsStateWithLifecycle(initialValue = null)
     val defaultThreshold = settings?.defaultThresholdMinutes ?: 5
+    val defaultReminder = settings?.reminderMinutes ?: 20 * 60
     val scope = rememberCoroutineScope()
     val trackedPackages = habits.mapNotNull { it.packageName }.toSet()
     val showFilterButton = tab == Tab.Home || tab == Tab.Habits
@@ -83,7 +84,7 @@ fun MainApp(repository: HabitRepository) {
         Box(modifier = Modifier.fillMaxSize()) {
             when (tab) {
                 Tab.Home -> HomeScreen(repository, homeItems, innerPadding, homeOptions)
-                Tab.Habits -> HabitsScreen(repository, homeItems, defaultThreshold, innerPadding, habitOptions)
+                Tab.Habits -> HabitsScreen(repository, homeItems, defaultThreshold, defaultReminder, settings?.reminderEnabled ?: true, innerPadding, habitOptions)
                 Tab.Analytics -> AnalyticsScreen(habits, allCheckIns, innerPadding)
                 Tab.Profile -> ProfileScreen(repository, innerPadding)
             }
@@ -117,9 +118,11 @@ fun MainApp(repository: HabitRepository) {
             onApp = { addStep = AddStep.App }
         )
         AddStep.Custom -> CustomTaskDialog(
+            reminderEnabled = settings?.reminderEnabled ?: false,
+            defaultReminderMinutes = defaultReminder,
             onDismiss = { addStep = AddStep.None },
-            onAdd = { name, iconKey ->
-                scope.launch { repository.addHabit(name, null, iconKey) }
+            onAdd = { name, iconKey, reminder ->
+                scope.launch { repository.addHabit(name, null, iconKey, reminder) }
                 addStep = AddStep.None
             }
         )

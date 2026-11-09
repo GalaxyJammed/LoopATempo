@@ -35,6 +35,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.example.loopatempo.data.HabitRepository
+import com.example.loopatempo.reminder.ReminderPlanner
 import com.example.loopatempo.service.BackgroundTracking
 import com.example.loopatempo.ui.MainApp
 import com.example.loopatempo.ui.components.HeaderCard
@@ -78,6 +79,7 @@ fun LoopATempoApp(repository: HabitRepository) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val settings by repository.observeSettings().collectAsStateWithLifecycle(initialValue = null)
+    val habits by repository.observeHabits().collectAsStateWithLifecycle(initialValue = emptyList())
     var granted by remember { mutableStateOf(hasUsageAccess(context)) }
     val keepAlive = settings?.keepAlive ?: false
     val settingsLoaded = settings != null
@@ -95,6 +97,13 @@ fun LoopATempoApp(repository: HabitRepository) {
     LaunchedEffect(granted, keepAlive, settingsLoaded) {
         if (granted && settingsLoaded) {
             BackgroundTracking.apply(context, keepAlive)
+        }
+    }
+
+    LaunchedEffect(settings, habits) {
+        val loaded = settings
+        if (loaded != null) {
+            ReminderPlanner.reschedule(context, habits, loaded)
         }
     }
 

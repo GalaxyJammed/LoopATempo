@@ -60,6 +60,9 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
+import com.example.loopatempo.data.formatWeekdays
+import com.example.loopatempo.data.productiveWeekdays
+import com.example.loopatempo.data.productiveWeekdaysIn
 
 @Composable
 fun AnalyticsScreen(
@@ -69,7 +72,7 @@ fun AnalyticsScreen(
 ) {
     val today = LocalDate.now()
     val summary = remember(habits, checkIns) { buildAnalytics(habits, checkIns) }
-    val busiestWeekday = summary.weekdayCounts.maxByOrNull { it.value }?.takeIf { it.value > 0 }
+    val allTimeWeekdays = remember(checkIns) { productiveWeekdays(checkIns) }
     val scroll = rememberScrollState()
 
     Column(
@@ -96,7 +99,7 @@ fun AnalyticsScreen(
             BarChart(
                 values = weekdays.map { summary.weekdayCounts[it] ?: 0 },
                 labels = weekdays.map { it.getDisplayName(TextStyle.SHORT, Locale.getDefault()) },
-                highlight = busiestWeekday?.let { weekdays.indexOf(it.key) }
+                highlight = allTimeWeekdays?.singleOrNull()?.let { weekdays.indexOf(it) }
             )
         }
 
@@ -133,13 +136,10 @@ fun AnalyticsScreen(
                     modifier = Modifier.weight(1f)
                 )
             }
-            busiestWeekday?.let {
-                Text(
-                    text = "All-time productive weekday: " +
-                            "${it.key.getDisplayName(TextStyle.FULL, Locale.getDefault())} (${it.value})",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
+            Text(
+                text = "All-time productive weekday: ${formatWeekdays(allTimeWeekdays)}",
+                style = MaterialTheme.typography.bodyLarge
+            )
         }
     }
 }
@@ -182,6 +182,7 @@ private fun MonthlyReviewCard(checkIns: List<CheckInEntity>, today: LocalDate) {
     var month by remember { mutableStateOf(current) }
     var picking by remember { mutableStateOf(false) }
     val stats = remember(checkIns, month) { buildMonthStats(checkIns, month) }
+    val monthWeekdays = remember(checkIns, month) { productiveWeekdaysIn(checkIns, month) }
     val formatter = remember { DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault()) }
 
     ShieldCard(modifier = Modifier.fillMaxWidth()) {
@@ -229,12 +230,10 @@ private fun MonthlyReviewCard(checkIns: List<CheckInEntity>, today: LocalDate) {
                 )
             }
 
-            stats.busiestWeekday?.let {
-                Text(
-                    text = "Most productive weekday: ${it.getDisplayName(TextStyle.FULL, Locale.getDefault())}",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
+            Text(
+                text = "Most productive weekday: ${formatWeekdays(monthWeekdays)}",
+                style = MaterialTheme.typography.bodyLarge
+            )
         }
     }
 

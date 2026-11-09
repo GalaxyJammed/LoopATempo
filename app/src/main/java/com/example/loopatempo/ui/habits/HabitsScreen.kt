@@ -56,6 +56,8 @@ fun HabitsScreen(
     repository: HabitRepository,
     habitItems: List<HomeItem>,
     defaultThreshold: Int,
+    defaultReminderMinutes: Int,
+    reminderEnabled: Boolean,
     contentPadding: PaddingValues,
     options: ListOptions
 ) {
@@ -108,6 +110,8 @@ fun HabitsScreen(
         EditHabitDialog(
             habit = habit,
             defaultThreshold = defaultThreshold,
+            defaultReminderMinutes = defaultReminderMinutes,
+            reminderEnabled = reminderEnabled,
             onSave = { updated ->
                 scope.launch { repository.updateHabit(updated) }
                 editing = null
