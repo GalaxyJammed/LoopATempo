@@ -11,7 +11,8 @@ data class ReleaseInfo(
     val publishedAt: String,
     val body: String,
     val url: String,
-    val prerelease: Boolean
+    val prerelease: Boolean,
+    val apkUrl: String? = null
 )
 
 object ReleaseNotes {
@@ -40,12 +41,22 @@ object ReleaseNotes {
                         publishedAt = r.str("published_at"),
                         body = r.str("body"),
                         url = r.str("html_url"),
-                        prerelease = r.optBoolean("prerelease", false)
+                        prerelease = r.optBoolean("prerelease", false),
+                        apkUrl = apkUrlOf(r)
                     )
                 }
         } finally {
             conn.disconnect()
         }
+    }
+
+    private fun apkUrlOf(release: JSONObject): String? {
+        val assets = release.optJSONArray("assets") ?: return null
+        return (0 until assets.length())
+            .map { assets.getJSONObject(it) }
+            .firstOrNull { it.optString("name").endsWith(".apk", ignoreCase = true) }
+            ?.optString("browser_download_url")
+            ?.takeIf { it.isNotBlank() }
     }
 
     fun clean(markdown: String): String =

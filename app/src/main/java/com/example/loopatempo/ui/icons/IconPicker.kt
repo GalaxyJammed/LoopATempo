@@ -39,7 +39,9 @@ import kotlinx.coroutines.withContext
 fun IconPicker(
     selectedKey: String?,
     onSelect: (String?) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    clearLabel: String = "No icon",
+    hint: String? = null
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -73,6 +75,13 @@ fun IconPicker(
         }
 
         IconSectionTitle("Icons")
+        hint?.let {
+            Text(
+                text = it,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         LazyVerticalGrid(
             columns = GridCells.Fixed(5),
             modifier = Modifier.heightIn(max = 220.dp),
@@ -83,7 +92,7 @@ fun IconPicker(
                 IconCell(selected = selectedKey == null, onClick = { onSelect(null) }) {
                     Icon(
                         imageVector = Icons.Filled.Close,
-                        contentDescription = "No icon",
+                        contentDescription = clearLabel,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }

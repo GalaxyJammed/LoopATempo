@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 
@@ -23,9 +24,16 @@ fun SettingRow(
     title: String,
     subtitle: String,
     onClick: (() -> Unit)? = null,
-    trailing: @Composable () -> Unit
+    trailing: @Composable () -> Unit,
+    containerColor: Color? = null,
+    borderColor: Color? = null,
+    subtitleColor: Color? = null
 ) {
-    ShieldCard(modifier = Modifier.fillMaxWidth()) {
+    ShieldCard(
+        modifier = Modifier.fillMaxWidth(),
+        containerColor = containerColor,
+        borderColor = borderColor
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -36,7 +44,7 @@ fun SettingRow(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+                tint = subtitleColor ?: MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(24.dp)
             )
             Spacer(Modifier.width(12.dp))
@@ -45,7 +53,7 @@ fun SettingRow(
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = subtitleColor ?: MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             trailing()

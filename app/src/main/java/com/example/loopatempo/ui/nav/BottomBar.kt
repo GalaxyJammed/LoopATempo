@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -67,6 +68,8 @@ fun BottomBar(
     addActive: Boolean,
     onSelect: (Tab) -> Unit,
     onAdd: () -> Unit,
+    updateAvailable: Boolean = false,
+    onUpdateClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current
@@ -154,7 +157,15 @@ fun BottomBar(
                         }
                 )
                 BarSlot(Tab.Analytics, highlightedTab, onSelect, onPositioned, Modifier.weight(1f))
-                BarSlot(Tab.Profile, highlightedTab, onSelect, onPositioned, Modifier.weight(1f))
+                BarSlot(
+                    tab = Tab.Profile,
+                    highlightedTab = highlightedTab,
+                    onSelect = onSelect,
+                    onPositioned = onPositioned,
+                    modifier = Modifier.weight(1f),
+                    alert = updateAvailable,
+                    onAlertClick = onUpdateClick
+                )
             }
 
             Box(
@@ -186,7 +197,9 @@ private fun BarSlot(
     highlightedTab: Tab?,
     onSelect: (Tab) -> Unit,
     onPositioned: (Tab, Float, Float) -> Unit,
-    modifier: Modifier
+    modifier: Modifier,
+    alert: Boolean = false,
+    onAlertClick: () -> Unit = {}
 ) {
     val isHighlighted = tab == highlightedTab
     val tint = if (isHighlighted) {
@@ -200,16 +213,32 @@ private fun BarSlot(
             .onGloballyPositioned { coords ->
                 onPositioned(tab, coords.positionInRoot().x, coords.size.width.toFloat())
             }
-            .clickable { onSelect(tab) },
+            .clickable { if (alert) onAlertClick() else onSelect(tab) },
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(
-            imageVector = tab.icon,
-            contentDescription = tab.label,
-            tint = tint,
-            modifier = Modifier.size(22.dp)
-        )
+        if (alert) {
+            Box(
+                modifier = Modifier
+                    .size(22.dp)
+                    .background(MaterialTheme.colorScheme.error, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "!",
+                    color = MaterialTheme.colorScheme.onError,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        } else {
+            Icon(
+                imageVector = tab.icon,
+                contentDescription = tab.label,
+                tint = tint,
+                modifier = Modifier.size(22.dp)
+            )
+        }
         Text(
             text = tab.label,
             style = MaterialTheme.typography.labelSmall,

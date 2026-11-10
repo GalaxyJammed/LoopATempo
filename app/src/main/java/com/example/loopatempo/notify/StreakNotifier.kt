@@ -36,7 +36,7 @@ object StreakNotifier {
     fun notifyCompleted(context: Context, appTitle: String) {
         if (!canPost(context)) return
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_stat_name)
+            .setSmallIcon(R.drawable.ic_stat_name )
             .setContentTitle("Streak completed")
             .setContentText("You completed the $appTitle task!")
             .setAutoCancel(true)

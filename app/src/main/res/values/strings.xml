@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">LoopATempo</string>
+    <string name="website_service_label">LoopATempo website check</string>
+    <string name="website_service_description">Reads the address bar of supported browsers to check off website tasks you visit. Only domains matching your website tasks are used. Nothing is sent anywhere.</string>
 </resources>

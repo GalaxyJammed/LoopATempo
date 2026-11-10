@@ -49,6 +49,17 @@ val MIGRATION_5_6 = object : Migration(5, 6) {
     }
 }
 
+val MIGRATION_6_7 = object : Migration(6, 7) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        if (!db.hasColumn("habits", "website")) {
+            db.execSQL("ALTER TABLE habits ADD COLUMN website TEXT")
+        }
+        if (!db.hasColumn("settings", "websiteAutoCheck")) {
+            db.execSQL("ALTER TABLE settings ADD COLUMN websiteAutoCheck INTEGER NOT NULL DEFAULT 0")
+        }
+    }
+}
+
 private fun SupportSQLiteDatabase.hasColumn(table: String, column: String): Boolean =
     query("PRAGMA table_info($table)").use { cursor ->
         val nameIndex = cursor.getColumnIndexOrThrow("name")

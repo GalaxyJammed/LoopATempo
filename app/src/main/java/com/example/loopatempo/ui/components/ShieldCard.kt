@@ -19,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -27,16 +28,18 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun ShieldCard(
     modifier: Modifier = Modifier,
+    containerColor: Color? = null,
+    borderColor: Color? = null,
     content: @Composable () -> Unit
 ) {
     val scheme = MaterialTheme.colorScheme
     val isDark = scheme.surface.luminance() < 0.5f
-    val outline = scheme.onSurface.copy(alpha = if (isDark) 0.2f else 0.4f)
+    val outline = borderColor ?: scheme.onSurface.copy(alpha = if (isDark) 0.2f else 0.4f)
 
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = scheme.surfaceContainerHighest),
+        colors = CardDefaults.cardColors(containerColor = containerColor ?: scheme.surfaceContainerHighest),
         border = BorderStroke(1.dp, outline)
     ) {
         content()

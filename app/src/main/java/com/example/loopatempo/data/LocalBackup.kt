@@ -33,6 +33,7 @@ object LocalBackup {
                     .put("keepAlive", s.keepAlive)
                     .put("reminderEnabled", s.reminderEnabled)
                     .put("reminderMinutes", s.reminderMinutes)
+                    .put("websiteAutoCheck", s.websiteAutoCheck)
             )
         }
 
@@ -48,6 +49,7 @@ object LocalBackup {
                     .put("iconKey", h.iconKey ?: JSONObject.NULL)
                     .put("iconImage", iconAsBase64(h.iconKey) ?: JSONObject.NULL)
                     .put("reminderMinutes", h.reminderMinutes ?: JSONObject.NULL)
+                    .put("website", h.website ?: JSONObject.NULL)
             )
         }
         root.put("habits", habits)
@@ -89,6 +91,7 @@ object LocalBackup {
                 thresholdMinutes = if (h.isNull("thresholdMinutes")) null else h.getInt("thresholdMinutes"),
                 createdAt = h.getLong("createdAt"),
                 reminderMinutes = if (h.isNull("reminderMinutes")) null else h.getInt("reminderMinutes"),
+                website = h.optNullableString("website"),
                 iconKey = iconKey
             )
         }
@@ -114,7 +117,8 @@ object LocalBackup {
             notificationsEnabled = s?.optBoolean("notificationsEnabled", false) ?: false,
             keepAlive = s?.optBoolean("keepAlive", true) ?: true,
             reminderEnabled = s?.optBoolean("reminderEnabled", true) ?: true,
-            reminderMinutes = s?.optInt("reminderMinutes", 20 * 60) ?: 20 * 60
+            reminderMinutes = s?.optInt("reminderMinutes", 20 * 60) ?: 20 * 60,
+            websiteAutoCheck = s?.optBoolean("websiteAutoCheck", false) ?: false
         )
 
         db.withTransaction {

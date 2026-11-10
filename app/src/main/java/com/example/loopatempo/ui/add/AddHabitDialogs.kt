@@ -49,6 +49,10 @@ import com.example.loopatempo.ui.components.ShieldCard
 import com.example.loopatempo.ui.components.formatMinutes
 import com.example.loopatempo.ui.components.lazyScrollbar
 import com.example.loopatempo.ui.icons.IconPicker
+import com.example.loopatempo.data.WebsiteMatcher
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import com.example.loopatempo.ui.components.verticalScrollbar
 
 @Composable
 fun AddChoiceDialog(
@@ -97,26 +101,57 @@ fun CustomTaskDialog(
     reminderEnabled: Boolean,
     defaultReminderMinutes: Int,
     onDismiss: () -> Unit,
-    onAdd: (String, String?, Int?) -> Unit
+    onAdd: (String, String?, Int?, String?) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
     var iconKey by remember { mutableStateOf<String?>(null) }
+    var website by remember { mutableStateOf("") }
     var customTime by remember { mutableStateOf(false) }
     var chosenMinutes by remember { mutableStateOf(defaultReminderMinutes) }
     var pickingTime by remember { mutableStateOf(false) }
+    val scroll = rememberScrollState()
+    val websiteValid = website.isBlank() || WebsiteMatcher.normalizeHost(website) != null
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Custom task") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                modifier = Modifier
+                    .heightIn(max = 440.dp)
+                    .verticalScrollbar(scroll)
+                    .verticalScroll(scroll),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
                     label = { Text("e.g. Drink 10 cups of water") },
                     singleLine = true
                 )
-                IconPicker(selectedKey = iconKey, onSelect = { iconKey = it })
+                OutlinedTextField(
+                    value = website,
+                    onValueChange = { website = it },
+                    label = { Text("Website (optional)") },
+                    placeholder = { Text("youtube.com") },
+                    supportingText = {
+                        Text(
+                            if (websiteValid) {
+                                "Enter only the domain, like youtube.com. Don't add https://."
+                            } else {
+                                "That doesn't look like a website address."
+                            }
+                        )
+                    },
+                    singleLine = true,
+                    isError = !websiteValid
+                )
+                IconPicker(
+                    selectedKey = iconKey,
+                    onSelect = { iconKey = it },
+                    clearLabel = if (website.isNotBlank()) "Website icon" else "No icon",
+                    hint = if (website.isNotBlank()) "Tap ✕ to use the website icon" else null
+                )
                 if (reminderEnabled) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -152,10 +187,11 @@ fun CustomTaskDialog(
                     onAdd(
                         name.trim(),
                         iconKey,
-                        if (reminderEnabled && customTime) chosenMinutes else null
+                        if (reminderEnabled && customTime) chosenMinutes else null,
+                        website.trim().ifBlank { null }
                     )
                 },
-                enabled = name.isNotBlank()
+                enabled = name.isNotBlank() && websiteValid
             ) {
                 Text("Add")
             }

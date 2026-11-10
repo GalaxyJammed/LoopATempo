@@ -14,14 +14,12 @@ import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.loopatempo.data.HabitRepository
+import com.example.loopatempo.data.ReleaseInfo
 import com.example.loopatempo.ui.components.HeaderCard
 import com.example.loopatempo.ui.components.SettingRow
 import com.example.loopatempo.ui.components.verticalScrollbar
@@ -29,38 +27,46 @@ import com.example.loopatempo.ui.permissions.FixScreen
 import com.example.loopatempo.ui.permissions.MissingPermissionsButton
 import com.example.loopatempo.ui.settings.SettingsScreen
 
-private enum class ProfilePage { HOME, MILESTONES, ABOUT, SETTINGS, FIX }
+enum class ProfilePage { HOME, MILESTONES, ABOUT, SETTINGS, FIX }
 
 @Composable
-fun ProfileScreen(repository: HabitRepository, contentPadding: PaddingValues) {
-    var page by remember { mutableStateOf(ProfilePage.HOME) }
-    BackHandler(enabled = page != ProfilePage.HOME) { page = ProfilePage.HOME }
+fun ProfileScreen(
+    repository: HabitRepository,
+    contentPadding: PaddingValues,
+    page: ProfilePage,
+    onPageChange: (ProfilePage) -> Unit,
+    update: ReleaseInfo?,
+    settingsAttention: Boolean = false
+) {
+    BackHandler(enabled = page != ProfilePage.HOME) { onPageChange(ProfilePage.HOME) }
 
     when (page) {
         ProfilePage.HOME -> ProfileHome(
             contentPadding = contentPadding,
-            onMilestones = { page = ProfilePage.MILESTONES },
-            onAbout = { page = ProfilePage.ABOUT },
-            onSettings = { page = ProfilePage.SETTINGS },
-            onFix = { page = ProfilePage.FIX }
+            settingsAttention = settingsAttention,
+            onMilestones = { onPageChange(ProfilePage.MILESTONES) },
+            onAbout = { onPageChange(ProfilePage.ABOUT) },
+            onSettings = { onPageChange(ProfilePage.SETTINGS) },
+            onFix = { onPageChange(ProfilePage.FIX) }
         )
         ProfilePage.MILESTONES -> MilestonesScreen(
             repository = repository,
             contentPadding = contentPadding,
-            onBack = { page = ProfilePage.HOME }
+            onBack = { onPageChange(ProfilePage.HOME) }
         )
         ProfilePage.ABOUT -> AboutScreen(
             contentPadding = contentPadding,
-            onBack = { page = ProfilePage.HOME }
+            update = update,
+            onBack = { onPageChange(ProfilePage.HOME) }
         )
         ProfilePage.SETTINGS -> SettingsScreen(
             repository = repository,
             contentPadding = contentPadding,
-            onBack = { page = ProfilePage.HOME }
+            onBack = { onPageChange(ProfilePage.HOME) }
         )
         ProfilePage.FIX -> FixScreen(
             contentPadding = contentPadding,
-            onBack = { page = ProfilePage.HOME }
+            onBack = { onPageChange(ProfilePage.HOME) }
         )
     }
 }
@@ -68,12 +74,16 @@ fun ProfileScreen(repository: HabitRepository, contentPadding: PaddingValues) {
 @Composable
 private fun ProfileHome(
     contentPadding: PaddingValues,
+    settingsAttention: Boolean,
     onMilestones: () -> Unit,
     onAbout: () -> Unit,
     onSettings: () -> Unit,
     onFix: () -> Unit
 ) {
     val scroll = rememberScrollState()
+    val errorColor = MaterialTheme.colorScheme.error
+    val errorContainer = MaterialTheme.colorScheme.errorContainer
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -100,7 +110,10 @@ private fun ProfileHome(
             title = "Settings",
             subtitle = "Appearance, tasks, reminders, and backup",
             onClick = onSettings,
-            trailing = { Chevron() }
+            trailing = { Chevron() },
+            containerColor = if (settingsAttention) errorContainer else null,
+            borderColor = if (settingsAttention) errorColor else null,
+            subtitleColor = if (settingsAttention) errorColor else null
         )
 
         SettingRow(

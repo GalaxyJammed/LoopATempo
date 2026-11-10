@@ -144,6 +144,7 @@ fun SettingsScreen(
                 )
             }
         )
+        WebsiteAutoCheckRow(repository)
 
         SectionDivider("Reminders")
         SettingRow(

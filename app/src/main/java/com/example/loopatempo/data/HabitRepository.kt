@@ -24,6 +24,9 @@ class HabitRepository(private val db: AppDatabase) {
         db.prefDao().save(PrefEntity(prefKey = key, prefValue = value))
     }
 
+    suspend fun readPref(key: String): String? =
+        db.prefDao().getAll().firstOrNull { it.prefKey == key }?.prefValue
+
     fun observeHomeItems(today: Long): Flow<List<HomeItem>> =
         combine(db.habitDao().observeHabits(), db.checkInDao().observeAll()) { habits, checkIns ->
             val daysByHabit = checkIns
@@ -39,7 +42,13 @@ class HabitRepository(private val db: AppDatabase) {
             }
         }
 
-    suspend fun addHabit(name: String, packageName: String?, iconKey: String?, reminderMinutes: Int? = null) {
+    suspend fun addHabit(
+        name: String,
+        packageName: String?,
+        iconKey: String?,
+        reminderMinutes: Int? = null,
+        website: String? = null
+    ) {
         db.habitDao().insert(
             HabitEntity(
                 name = name,
@@ -47,7 +56,8 @@ class HabitRepository(private val db: AppDatabase) {
                 thresholdMinutes = null,
                 createdAt = System.currentTimeMillis(),
                 iconKey = iconKey,
-                reminderMinutes = reminderMinutes
+                reminderMinutes = reminderMinutes,
+                website = website
             )
         )
     }

@@ -50,6 +50,8 @@ import com.example.loopatempo.ui.filter.ListRow
 import com.example.loopatempo.ui.filter.arrangeRows
 import com.example.loopatempo.ui.icons.HabitIcon
 import kotlinx.coroutines.launch
+import com.example.loopatempo.data.WebsiteMatcher
+import com.example.loopatempo.ui.components.WebsiteIcon
 
 @Composable
 fun HabitsScreen(
@@ -160,6 +162,8 @@ private fun HabitManageRow(
                 AppIcon(packageName = pkg, modifier = Modifier.size(40.dp))
             } else if (habit.iconKey != null) {
                 HabitIcon(habit.iconKey, Modifier.size(40.dp))
+            } else if (habit.website != null) {
+                WebsiteIcon(WebsiteMatcher.normalizeHost(habit.website) ?: habit.website, Modifier.size(40.dp))
             } else {
                 Box(
                     modifier = Modifier

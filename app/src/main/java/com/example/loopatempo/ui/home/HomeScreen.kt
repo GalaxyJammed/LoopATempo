@@ -1,5 +1,8 @@
 package com.example.loopatempo.ui.home
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -13,7 +16,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.loopatempo.data.HabitRepository
@@ -39,6 +47,11 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.layout.PaddingValues as Padding
+import android.content.ActivityNotFoundException
+import android.widget.Toast
+import com.example.loopatempo.data.WebsiteMatcher
+import com.example.loopatempo.ui.components.WebsiteIcon
 
 @Composable
 fun HomeScreen(
@@ -95,8 +108,12 @@ fun HomeScreen(
 
 @Composable
 private fun HabitRow(item: HomeItem, onCheckedChange: (Boolean) -> Unit) {
+    val context = LocalContext.current
     val pkg = item.habit.packageName
+    val website = item.habit.website
+    val websiteHost = website?.let { WebsiteMatcher.normalizeHost(it) }
     val streakText = if (item.streak > 0) "Streak: ${item.streak} 🔥" else "Streak: ${item.streak}"
+
     ShieldCard(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
@@ -106,9 +123,15 @@ private fun HabitRow(item: HomeItem, onCheckedChange: (Boolean) -> Unit) {
                 AppIcon(packageName = pkg, modifier = Modifier.size(40.dp))
             } else {
                 Checkbox(checked = item.checkedToday, onCheckedChange = onCheckedChange)
-                if (item.habit.iconKey != null) {
-                    Spacer(Modifier.width(8.dp))
-                    HabitIcon(item.habit.iconKey, Modifier.size(28.dp))
+                when {
+                    item.habit.iconKey != null -> {
+                        Spacer(Modifier.width(8.dp))
+                        HabitIcon(item.habit.iconKey, Modifier.size(28.dp))
+                    }
+                    websiteHost != null -> {
+                        Spacer(Modifier.width(8.dp))
+                        WebsiteIcon(websiteHost, Modifier.size(28.dp))
+                    }
                 }
             }
             Spacer(Modifier.width(8.dp))
@@ -116,6 +139,28 @@ private fun HabitRow(item: HomeItem, onCheckedChange: (Boolean) -> Unit) {
                 Text(item.habit.name, style = MaterialTheme.typography.titleMedium)
                 Text(streakText, style = MaterialTheme.typography.bodyMedium)
             }
+            if (website != null) {
+                IconButton(onClick = { openWebsite(context, website) }) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                        contentDescription = "Open website"
+                    )
+                }
+            }
         }
+    }
+}
+
+private fun openWebsite(context: Context, website: String) {
+    val url = if (website.startsWith("http")) website else "https://$website"
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        .addCategory(Intent.CATEGORY_BROWSABLE)
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    try {
+        context.startActivity(intent)
+    } catch (e: ActivityNotFoundException) {
+        Toast.makeText(context, "No browser found to open $url", Toast.LENGTH_LONG).show()
+    } catch (e: Exception) {
+        Toast.makeText(context, "Couldn't open $url: ${e.message}", Toast.LENGTH_LONG).show()
     }
 }

@@ -3,7 +3,10 @@ package com.example.loopatempo.ui.habits
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -16,11 +19,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.loopatempo.data.HabitEntity
+import com.example.loopatempo.data.WebsiteMatcher
 import com.example.loopatempo.ui.components.MinuteOfDayPicker
 import com.example.loopatempo.ui.components.formatMinutes
+import com.example.loopatempo.ui.components.verticalScrollbar
 import com.example.loopatempo.ui.icons.IconPicker
 
 @Composable
@@ -39,14 +45,23 @@ fun EditHabitDialog(
     }
     var thresholdEdited by remember { mutableStateOf(false) }
     var iconKey by remember { mutableStateOf(habit.iconKey) }
+    var website by remember { mutableStateOf(habit.website.orEmpty()) }
     var reminder by remember { mutableStateOf(habit.reminderMinutes) }
     var pickingTime by remember { mutableStateOf(false) }
+    val scroll = rememberScrollState()
+    val websiteValid = isApp || website.isBlank() || WebsiteMatcher.normalizeHost(website) != null
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Edit") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                modifier = Modifier
+                    .heightIn(max = 440.dp)
+                    .verticalScrollbar(scroll)
+                    .verticalScroll(scroll),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
@@ -65,7 +80,29 @@ fun EditHabitDialog(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                     )
                 } else {
-                    IconPicker(selectedKey = iconKey, onSelect = { iconKey = it })
+                    OutlinedTextField(
+                        value = website,
+                        onValueChange = { website = it },
+                        label = { Text("Website (optional)") },
+                        placeholder = { Text("youtube.com") },
+                        supportingText = {
+                            Text(
+                                if (websiteValid) {
+                                    "Enter only the domain, like youtube.com. Don't add https://."
+                                } else {
+                                    "That doesn't look like a website address."
+                                }
+                            )
+                        },
+                        singleLine = true,
+                        isError = !websiteValid
+                    )
+                    IconPicker(
+                        selectedKey = iconKey,
+                        onSelect = { iconKey = it },
+                        clearLabel = if (website.isNotBlank()) "Website icon" else "No icon",
+                        hint = if (website.isNotBlank()) "Tap ✕ to use the website icon" else null
+                    )
                 }
 
                 HorizontalDivider()
@@ -101,7 +138,7 @@ fun EditHabitDialog(
         },
         confirmButton = {
             TextButton(
-                enabled = name.isNotBlank(),
+                enabled = name.isNotBlank() && websiteValid,
                 onClick = {
                     onSave(
                         habit.copy(
@@ -116,6 +153,7 @@ fun EditHabitDialog(
                                 null
                             },
                             iconKey = if (isApp) habit.iconKey else iconKey,
+                            website = if (isApp) null else website.trim().ifBlank { null },
                             reminderMinutes = if (reminderEnabled) reminder else habit.reminderMinutes
                         )
                     )

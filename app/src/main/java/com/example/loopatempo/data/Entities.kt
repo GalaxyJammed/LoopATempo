@@ -14,7 +14,8 @@ data class HabitEntity(
     val thresholdMinutes: Int?,
     val createdAt: Long,
     val iconKey: String? = null,
-    val reminderMinutes: Int? = null
+    val reminderMinutes: Int? = null,
+    val website: String? = null
 )
 
 @Entity(
@@ -44,5 +45,6 @@ data class SettingsEntity(
     @ColumnInfo(defaultValue = "0") val notificationsEnabled: Boolean = false,
     @ColumnInfo(defaultValue = "0") val keepAlive: Boolean = true,
     @ColumnInfo(defaultValue = "1") val reminderEnabled: Boolean = true,
-    @ColumnInfo(defaultValue = "1200") val reminderMinutes: Int = 20 * 60
+    @ColumnInfo(defaultValue = "1200") val reminderMinutes: Int = 20 * 60,
+    @ColumnInfo(defaultValue = "0") val websiteAutoCheck: Boolean = false
 )
