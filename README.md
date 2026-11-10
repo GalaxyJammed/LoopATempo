@@ -131,7 +131,7 @@ No. It's distributed through GitHub releases only.
 
 ## Bug Reports and Suggestions
 
-- Report bugs or suggest features by opening an [issue](../../issues) or discussion
+- Report bugs or suggest features by opening an [issue](../../issues) or [discussion](https://github.com/GalaxyJammed/LoopATempo/discussions)
 
 ## License
 
