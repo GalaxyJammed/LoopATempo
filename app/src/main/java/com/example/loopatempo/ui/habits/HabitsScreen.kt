@@ -20,14 +20,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,18 +38,18 @@ import androidx.compose.ui.unit.dp
 import com.example.loopatempo.data.HabitEntity
 import com.example.loopatempo.data.HabitRepository
 import com.example.loopatempo.data.HomeItem
+import com.example.loopatempo.data.WebsiteMatcher
 import com.example.loopatempo.ui.components.AppIcon
 import com.example.loopatempo.ui.components.HeaderCard
 import com.example.loopatempo.ui.components.SectionDivider
 import com.example.loopatempo.ui.components.ShieldCard
+import com.example.loopatempo.ui.components.WebsiteIcon
 import com.example.loopatempo.ui.components.lazyScrollbar
 import com.example.loopatempo.ui.filter.ListOptions
 import com.example.loopatempo.ui.filter.ListRow
 import com.example.loopatempo.ui.filter.arrangeRows
 import com.example.loopatempo.ui.icons.HabitIcon
 import kotlinx.coroutines.launch
-import com.example.loopatempo.data.WebsiteMatcher
-import com.example.loopatempo.ui.components.WebsiteIcon
 
 @Composable
 fun HabitsScreen(
@@ -61,13 +59,13 @@ fun HabitsScreen(
     defaultReminderMinutes: Int,
     reminderEnabled: Boolean,
     contentPadding: PaddingValues,
-    options: ListOptions
+    options: ListOptions,
+    onRequestDelete: (HabitEntity) -> Unit
 ) {
     val rows = remember(habitItems, options) { arrangeRows(habitItems, options) }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     var editing by remember { mutableStateOf<HabitEntity?>(null) }
-    var deleting by remember { mutableStateOf<HabitEntity?>(null) }
 
     LazyColumn(
         state = listState,
@@ -102,7 +100,7 @@ fun HabitsScreen(
                     habit = row.item.habit,
                     defaultThreshold = defaultThreshold,
                     onEdit = { editing = row.item.habit },
-                    onDelete = { deleting = row.item.habit }
+                    onDelete = { onRequestDelete(row.item.habit) }
                 )
             }
         }
@@ -121,27 +119,6 @@ fun HabitsScreen(
             onDismiss = { editing = null }
         )
     }
-
-    deleting?.let { habit ->
-        AlertDialog(
-            onDismissRequest = { deleting = null },
-            title = { Text("Delete \"${habit.name}\"?") },
-            text = { Text("Its streak history will be deleted too. This can't be undone.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        scope.launch { repository.deleteHabit(habit) }
-                        deleting = null
-                    }
-                ) {
-                    Text("Delete")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { deleting = null }) { Text("Cancel") }
-            }
-        )
-    }
 }
 
 @Composable
@@ -158,14 +135,14 @@ private fun HabitManageRow(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (pkg != null) {
-                AppIcon(packageName = pkg, modifier = Modifier.size(40.dp))
-            } else if (habit.iconKey != null) {
-                HabitIcon(habit.iconKey, Modifier.size(40.dp))
-            } else if (habit.website != null) {
-                WebsiteIcon(WebsiteMatcher.normalizeHost(habit.website) ?: habit.website, Modifier.size(40.dp))
-            } else {
-                Box(
+            when {
+                pkg != null -> AppIcon(packageName = pkg, modifier = Modifier.size(40.dp))
+                habit.iconKey != null -> HabitIcon(habit.iconKey, Modifier.size(40.dp))
+                habit.website != null -> WebsiteIcon(
+                    WebsiteMatcher.normalizeHost(habit.website) ?: habit.website,
+                    Modifier.size(40.dp)
+                )
+                else -> Box(
                     modifier = Modifier
                         .size(40.dp)
                         .border(2.dp, MaterialTheme.colorScheme.outline, CircleShape)

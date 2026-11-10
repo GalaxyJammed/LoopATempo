@@ -76,6 +76,7 @@ fun EditHabitDialog(
                             thresholdEdited = true
                         },
                         label = { Text("Minutes to count as a streak") },
+                        supportingText = { Text("Place 0 to make it instant!") },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                     )
@@ -145,7 +146,7 @@ fun EditHabitDialog(
                             name = name.trim(),
                             thresholdMinutes = if (isApp) {
                                 if (thresholdEdited) {
-                                    threshold.toIntOrNull()?.takeIf { it > 0 }
+                                    threshold.toIntOrNull()?.takeIf { it >= 0 }
                                 } else {
                                     habit.thresholdMinutes
                                 }

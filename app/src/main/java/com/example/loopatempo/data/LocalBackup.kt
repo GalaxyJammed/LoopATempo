@@ -34,6 +34,8 @@ object LocalBackup {
                     .put("reminderEnabled", s.reminderEnabled)
                     .put("reminderMinutes", s.reminderMinutes)
                     .put("websiteAutoCheck", s.websiteAutoCheck)
+                    .put("widgetHideCompleted", s.widgetHideCompleted)
+                    .put("widgetStrikeCompleted", s.widgetStrikeCompleted)
             )
         }
 
@@ -118,7 +120,9 @@ object LocalBackup {
             keepAlive = s?.optBoolean("keepAlive", true) ?: true,
             reminderEnabled = s?.optBoolean("reminderEnabled", true) ?: true,
             reminderMinutes = s?.optInt("reminderMinutes", 20 * 60) ?: 20 * 60,
-            websiteAutoCheck = s?.optBoolean("websiteAutoCheck", false) ?: false
+            websiteAutoCheck = s?.optBoolean("websiteAutoCheck", false) ?: false,
+            widgetHideCompleted = s?.optBoolean("widgetHideCompleted", false) ?: false,
+            widgetStrikeCompleted = s?.optBoolean("widgetStrikeCompleted", false) ?: false
         )
 
         db.withTransaction {

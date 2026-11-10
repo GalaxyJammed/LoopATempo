@@ -8,6 +8,7 @@ import com.example.loopatempo.notify.StreakNotifier
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.flow.first
+import com.example.loopatempo.widget.HabitWidgetProvider
 
 class AppStreakSync(private val context: Context, private val db: AppDatabase) {
 
@@ -30,13 +31,16 @@ class AppStreakSync(private val context: Context, private val db: AppDatabase) {
             val pkg = habit.packageName ?: continue
             val used = usedMillis[pkg] ?: continue
             val thresholdMillis = (habit.thresholdMinutes ?: settings.defaultThresholdMinutes) * 60_000L
-            if (habit.id in checkedIds || used < thresholdMillis) continue
+            if (habit.id in checkedIds || used <= 0L) continue
+            if (used < thresholdMillis) continue
 
             db.checkInDao().insert(CheckInEntity(habitId = habit.id, day = todayEpoch))
             if (settings.notificationsEnabled) {
                 StreakNotifier.notifyCompleted(context, habit.name)
             }
         }
+
+        HabitWidgetProvider.refreshAll(context)
     }
 
     private fun millisByPackage(start: Long, end: Long): Map<String, Long> {

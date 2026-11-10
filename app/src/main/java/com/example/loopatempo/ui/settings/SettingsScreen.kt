@@ -48,6 +48,7 @@ import com.example.loopatempo.ui.components.SettingRow
 import com.example.loopatempo.ui.components.formatMinutes
 import com.example.loopatempo.ui.components.verticalScrollbar
 import kotlinx.coroutines.launch
+import com.example.loopatempo.ui.settings.WidgetSettingsRows
 
 @Composable
 fun SettingsScreen(
@@ -179,6 +180,9 @@ fun SettingsScreen(
             }
         )
 
+        SectionDivider("Widget")
+        WidgetSettingsRows(repository, current)
+
         SectionDivider("Backup")
         LocalBackupRows()
     }
@@ -214,7 +218,7 @@ private fun ThresholdDialog(
     onDismiss: () -> Unit
 ) {
     var text by remember { mutableStateOf(current.toString()) }
-    val parsed = text.toIntOrNull()?.takeIf { it in 1..999 }
+    val parsed = text.toIntOrNull()?.takeIf { it in 0..999 }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -224,7 +228,9 @@ private fun ThresholdDialog(
                 value = text,
                 onValueChange = { text = it.filter(Char::isDigit).take(3) },
                 label = { Text("Minutes") },
-                supportingText = { Text("Used for apps you haven't changed in Edit") },
+                supportingText = {
+                    Text("Used for apps you haven't changed in Edit. Place 0 to make it instant!")
+                },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )

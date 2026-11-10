@@ -29,17 +29,22 @@ class HabitRepository(private val db: AppDatabase) {
 
     fun observeHomeItems(today: Long): Flow<List<HomeItem>> =
         combine(db.habitDao().observeHabits(), db.checkInDao().observeAll()) { habits, checkIns ->
-            val daysByHabit = checkIns
-                .groupBy({ it.habitId }, { it.day })
-                .mapValues { it.value.toSet() }
+            val snapshot = RestDays.snapshot(habits, checkIns, today)
+            val checkedToday = checkIns.filter { it.day == today }.map { it.habitId }.toSet()
             habits.map { habit ->
-                val days = daysByHabit[habit.id].orEmpty()
+                val checked = habit.id in checkedToday
+                val run = snapshot.runs[habit.id] ?: 0
                 HomeItem(
                     habit = habit,
-                    checkedToday = today in days,
-                    streak = currentStreak(days, today)
+                    checkedToday = checked,
+                    streak = if (checked) run + 1 else run
                 )
             }
+        }
+
+    fun observeRestDays(today: Long): Flow<Int> =
+        combine(db.habitDao().observeHabits(), db.checkInDao().observeAll()) { habits, checkIns ->
+            RestDays.snapshot(habits, checkIns, today).displayed
         }
 
     suspend fun addHabit(
@@ -87,15 +92,5 @@ class HabitRepository(private val db: AppDatabase) {
     suspend fun updateSettings(change: (SettingsEntity) -> SettingsEntity) {
         val current = db.settingsDao().observe().first() ?: SettingsEntity()
         db.settingsDao().save(change(current))
-    }
-
-    private fun currentStreak(days: Set<Long>, today: Long): Int {
-        var day = if (today in days) today else today - 1
-        var count = 0
-        while (day in days) {
-            count++
-            day--
-        }
-        return count
     }
 }

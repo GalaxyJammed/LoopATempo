@@ -60,6 +60,17 @@ val MIGRATION_6_7 = object : Migration(6, 7) {
     }
 }
 
+val MIGRATION_7_8 = object : Migration(7, 8) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        if (!db.hasColumn("settings", "widgetHideCompleted")) {
+            db.execSQL("ALTER TABLE settings ADD COLUMN widgetHideCompleted INTEGER NOT NULL DEFAULT 0")
+        }
+        if (!db.hasColumn("settings", "widgetStrikeCompleted")) {
+            db.execSQL("ALTER TABLE settings ADD COLUMN widgetStrikeCompleted INTEGER NOT NULL DEFAULT 0")
+        }
+    }
+}
+
 private fun SupportSQLiteDatabase.hasColumn(table: String, column: String): Boolean =
     query("PRAGMA table_info($table)").use { cursor ->
         val nameIndex = cursor.getColumnIndexOrThrow("name")

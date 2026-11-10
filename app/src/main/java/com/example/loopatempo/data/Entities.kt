@@ -46,5 +46,7 @@ data class SettingsEntity(
     @ColumnInfo(defaultValue = "0") val keepAlive: Boolean = true,
     @ColumnInfo(defaultValue = "1") val reminderEnabled: Boolean = true,
     @ColumnInfo(defaultValue = "1200") val reminderMinutes: Int = 20 * 60,
-    @ColumnInfo(defaultValue = "0") val websiteAutoCheck: Boolean = false
+    @ColumnInfo(defaultValue = "0") val websiteAutoCheck: Boolean = false,
+    @ColumnInfo(defaultValue = "0") val widgetHideCompleted: Boolean = false,
+    @ColumnInfo(defaultValue = "0") val widgetStrikeCompleted: Boolean = false
 )

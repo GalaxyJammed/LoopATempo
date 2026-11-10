@@ -16,6 +16,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import com.example.loopatempo.widget.HabitWidgetProvider
 
 private const val TAG = "WebsiteWatch"
 
@@ -77,6 +78,7 @@ class WebsiteWatchService : AccessibilityService() {
                 val settings = app.database.settingsDao().observe().first() ?: return@launch
                 if (!settings.websiteAutoCheck) return@launch
                 val completed = WebsiteMatcher.onVisit(app.database, host)
+                HabitWidgetProvider.refreshAll(applicationContext)
                 Log.i(TAG, "Checked ${completed.size} website task(s) for $host")
                 if (settings.notificationsEnabled) {
                     completed.forEach { StreakNotifier.notifyCompleted(applicationContext, it.name) }
