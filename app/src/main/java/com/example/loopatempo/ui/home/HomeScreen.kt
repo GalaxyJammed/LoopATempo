@@ -52,12 +52,15 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.coroutines.launch
+import androidx.compose.material3.LinearProgressIndicator
+import com.example.loopatempo.data.RestDays
+import com.example.loopatempo.data.RestSnapshot
 
 @Composable
 fun HomeScreen(
     repository: HabitRepository,
     homeItems: List<HomeItem>,
-    restDays: Int,
+    restSnapshot: RestSnapshot,
     contentPadding: PaddingValues,
     options: ListOptions,
     onAppCheckAttempt: () -> Unit
@@ -85,7 +88,7 @@ fun HomeScreen(
             HeaderCard(title = "LoopATempo", subtitle = subtitle)
         }
         item {
-            RestDaysCard(restDays)
+            RestDaysCard(restSnapshot, homeItems.size)
         }
         if (homeItems.isEmpty()) {
             item {
@@ -116,34 +119,48 @@ fun HomeScreen(
 }
 
 @Composable
-private fun RestDaysCard(count: Int) {
+private fun RestDaysCard(snapshot: RestSnapshot, habitCount: Int) {
     val flame = Color(0xFF1E88E5)
+    val hint = when {
+        habitCount < RestDays.MIN_HABITS -> "Add at least ${RestDays.MIN_HABITS} tasks to start earning"
+        habitCount == RestDays.MIN_HABITS -> "Eligible day: 80% of tasks (100% for 3 tasks)"
+        else -> "Eligible day: 80% of tasks"
+    }
     ShieldCard(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text("Rest days", style = MaterialTheme.typography.titleMedium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = if (count == 0) {
-                        "Complete 5 habits in one day to earn one"
-                    } else {
-                        "Used automatically if a streak would break"
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = "Rest days",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f)
                 )
+                repeat(snapshot.displayed) {
+                    Icon(
+                        imageVector = Icons.Filled.LocalFireDepartment,
+                        contentDescription = "Rest day",
+                        tint = flame,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(Modifier.width(4.dp))
+                }
             }
-            repeat(count) {
-                Icon(
-                    imageVector = Icons.Filled.LocalFireDepartment,
-                    contentDescription = "Rest day",
-                    tint = flame,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(Modifier.width(4.dp))
-            }
+            LinearProgressIndicator(
+                progress = { snapshot.progress.toFloat() / snapshot.target },
+                modifier = Modifier.fillMaxWidth(),
+                color = flame
+            )
+            Text(
+                text = "${snapshot.progress}/${snapshot.target} to next rest day",
+                style = MaterialTheme.typography.bodySmall
+            )
+            Text(
+                text = hint,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

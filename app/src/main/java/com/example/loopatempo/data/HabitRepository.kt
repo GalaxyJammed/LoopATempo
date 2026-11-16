@@ -42,9 +42,9 @@ class HabitRepository(private val db: AppDatabase) {
             }
         }
 
-    fun observeRestDays(today: Long): Flow<Int> =
+    fun observeRestSnapshot(today: Long): Flow<RestSnapshot> =
         combine(db.habitDao().observeHabits(), db.checkInDao().observeAll()) { habits, checkIns ->
-            RestDays.snapshot(habits, checkIns, today).displayed
+            RestDays.snapshot(habits, checkIns, today)
         }
 
     suspend fun addHabit(

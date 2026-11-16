@@ -54,6 +54,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import com.example.loopatempo.data.RestDays
+import com.example.loopatempo.data.RestSnapshot
 
 private enum class AddStep { None, Choice, Custom, App }
 
@@ -82,7 +84,8 @@ fun MainApp(repository: HabitRepository) {
     val todayEpoch = LocalDate.now().toEpochDay()
     val homeItems by repository.observeHomeItems(todayEpoch)
         .collectAsStateWithLifecycle(initialValue = emptyList())
-    val restDays by repository.observeRestDays(todayEpoch).collectAsStateWithLifecycle(initialValue = 0)
+    val restSnapshot by repository.observeRestSnapshot(todayEpoch)
+        .collectAsStateWithLifecycle(initialValue = RestSnapshot(0, emptyMap(), 0, RestDays.DAYS_PER_REST))
     val allCheckIns by repository.observeCheckIns().collectAsStateWithLifecycle(initialValue = emptyList())
     val settings by repository.observeSettings().collectAsStateWithLifecycle(initialValue = null)
     val defaultThreshold = settings?.defaultThresholdMinutes ?: 5
@@ -163,7 +166,7 @@ fun MainApp(repository: HabitRepository) {
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize()) {
             when (tab) {
-                Tab.Home -> HomeScreen(repository, visibleItems, restDays, innerPadding, homeOptions) {
+                Tab.Home -> HomeScreen(repository, visibleItems, restSnapshot, innerPadding, homeOptions) {
                     appHintTrigger += 1
                 }
                 Tab.Habits -> HabitsScreen(
