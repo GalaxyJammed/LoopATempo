@@ -32,22 +32,23 @@ object RestDays {
         var progress = 0
         var day = createdDay.values.minOrNull() ?: today
 
-        while (day < today) {
+        while (day <= today) {
             val active = habits.filter { createdDay.getValue(it.id) <= day }
             val checked = checkedByDay[day].orEmpty()
             val eligible = active.size >= MIN_HABITS &&
                     active.count { it.id in checked } >= requiredChecks(active.size)
-            val missed = active.filter { it.id !in checked }
-            val streakAtRisk = missed.any { runs.getValue(it.id) > 0 }
+            val streakAtRisk = active.any { it.id !in checked && runs.getValue(it.id) > 0 }
             val covered = streakAtRisk && held > 0
             if (covered) held--
 
-            for (h in habits) {
-                val id = h.id
-                runs[id] = when {
-                    id in checked -> runs.getValue(id) + 1
-                    covered -> runs.getValue(id)
-                    else -> 0
+            if (day < today) {
+                for (h in habits) {
+                    val id = h.id
+                    runs[id] = when {
+                        id in checked -> runs.getValue(id) + 1
+                        covered -> runs.getValue(id)
+                        else -> 0
+                    }
                 }
             }
 
@@ -61,15 +62,8 @@ object RestDays {
             day++
         }
 
-        val todayActive = habits.filter { createdDay.getValue(it.id) <= today }
-        val todayChecked = checkedByDay[today].orEmpty()
-        val todayEligible = todayActive.size >= MIN_HABITS &&
-                todayActive.count { it.id in todayChecked } >= requiredChecks(todayActive.size)
-        val todayComplete = todayEligible && progress + 1 >= DAYS_PER_REST
-        val displayed = if (todayComplete) (held + 1).coerceAtMost(MAX_HELD) else held
-
         return RestSnapshot(
-            displayed = displayed,
+            displayed = held,
             runs = runs,
             progress = progress,
             target = DAYS_PER_REST

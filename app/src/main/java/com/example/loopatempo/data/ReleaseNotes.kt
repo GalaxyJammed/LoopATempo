@@ -30,9 +30,10 @@ object ReleaseNotes {
             if (code !in 200..299) throw IllegalStateException("GitHub returned $code")
             val text = conn.inputStream.bufferedReader().use { it.readText() }
             val array = JSONArray(text)
-            return (0 until array.length())
+            return (0 until minOf(array.length(), 10))
                 .map { array.getJSONObject(it) }
                 .filter { !it.optBoolean("draft", false) }
+                .take(2)
                 .map { r ->
                     val tag = r.str("tag_name")
                     ReleaseInfo(
