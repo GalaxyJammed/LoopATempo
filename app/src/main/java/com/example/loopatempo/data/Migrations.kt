@@ -71,6 +71,35 @@ val MIGRATION_7_8 = object : Migration(7, 8) {
     }
 }
 
+val MIGRATION_8_9 = object : Migration(8, 9) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS usage_minutes (packageName TEXT NOT NULL, day INTEGER NOT NULL, millis INTEGER NOT NULL, PRIMARY KEY(packageName, day))"
+        )
+        db.execSQL(
+            """CREATE TABLE IF NOT EXISTS settings_new (
+                id INTEGER NOT NULL,
+                defaultThresholdMinutes INTEGER NOT NULL,
+                darkTheme INTEGER NOT NULL,
+                notificationsEnabled INTEGER NOT NULL DEFAULT 0,
+                keepAlive INTEGER NOT NULL DEFAULT 0,
+                reminderEnabled INTEGER NOT NULL DEFAULT 1,
+                reminderMinutes INTEGER NOT NULL DEFAULT 1200,
+                websiteAutoCheck INTEGER NOT NULL DEFAULT 0,
+                widgetHideCompleted INTEGER NOT NULL DEFAULT 0,
+                widgetStrikeCompleted INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY(id)
+            )"""
+        )
+        db.execSQL(
+            "INSERT INTO settings_new (id, defaultThresholdMinutes, darkTheme, notificationsEnabled, keepAlive, reminderEnabled, reminderMinutes, websiteAutoCheck, widgetHideCompleted, widgetStrikeCompleted) " +
+                    "SELECT id, defaultThresholdMinutes, darkTheme, notificationsEnabled, keepAlive, reminderEnabled, reminderMinutes, websiteAutoCheck, widgetHideCompleted, widgetStrikeCompleted FROM settings"
+        )
+        db.execSQL("DROP TABLE settings")
+        db.execSQL("ALTER TABLE settings_new RENAME TO settings")
+    }
+}
+
 private fun SupportSQLiteDatabase.hasColumn(table: String, column: String): Boolean =
     query("PRAGMA table_info($table)").use { cursor ->
         val nameIndex = cursor.getColumnIndexOrThrow("name")

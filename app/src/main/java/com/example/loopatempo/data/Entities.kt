@@ -39,7 +39,6 @@ data class CheckInEntity(
 @Entity(tableName = "settings")
 data class SettingsEntity(
     @PrimaryKey val id: Int = 0,
-    val nickname: String = "",
     val defaultThresholdMinutes: Int = 5,
     val darkTheme: Boolean = true,
     @ColumnInfo(defaultValue = "0") val notificationsEnabled: Boolean = false,

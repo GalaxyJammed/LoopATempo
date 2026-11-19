@@ -20,6 +20,8 @@ class HabitRepository(private val db: AppDatabase) {
 
     fun observePref(key: String): Flow<String?> = db.prefDao().observe(key)
 
+    fun observeUsage(): Flow<List<UsageMinutesEntity>> = db.usageDao().observeAll()
+
     suspend fun savePref(key: String, value: String) {
         db.prefDao().save(PrefEntity(prefKey = key, prefValue = value))
     }
@@ -72,6 +74,7 @@ class HabitRepository(private val db: AppDatabase) {
     }
 
     suspend fun deleteHabit(habit: HabitEntity) {
+        habit.packageName?.let { db.usageDao().deleteFor(it) }
         db.habitDao().delete(habit)
     }
 

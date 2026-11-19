@@ -87,6 +87,7 @@ fun MainApp(repository: HabitRepository) {
     val restSnapshot by repository.observeRestSnapshot(todayEpoch)
         .collectAsStateWithLifecycle(initialValue = RestSnapshot(0, emptyMap(), 0, RestDays.DAYS_PER_REST))
     val allCheckIns by repository.observeCheckIns().collectAsStateWithLifecycle(initialValue = emptyList())
+    val usage by repository.observeUsage().collectAsStateWithLifecycle(initialValue = emptyList())
     val settings by repository.observeSettings().collectAsStateWithLifecycle(initialValue = null)
     val defaultThreshold = settings?.defaultThresholdMinutes ?: 5
     val defaultReminder = settings?.reminderMinutes ?: 20 * 60
@@ -179,7 +180,7 @@ fun MainApp(repository: HabitRepository) {
                     options = habitOptions,
                     onRequestDelete = requestDelete
                 )
-                Tab.Analytics -> AnalyticsScreen(habits, allCheckIns, innerPadding)
+                Tab.Analytics -> AnalyticsScreen(habits, allCheckIns, usage, innerPadding)
                 Tab.Profile -> ProfileScreen(
                     repository = repository,
                     contentPadding = innerPadding,

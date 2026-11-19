@@ -5,10 +5,10 @@ import android.app.usage.UsageStatsManager
 import android.content.Context
 import com.example.loopatempo.hasUsageAccess
 import com.example.loopatempo.notify.StreakNotifier
+import com.example.loopatempo.widget.HabitWidgetProvider
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.flow.first
-import com.example.loopatempo.widget.HabitWidgetProvider
 
 class AppStreakSync(private val context: Context, private val db: AppDatabase) {
 
@@ -25,6 +25,14 @@ class AppStreakSync(private val context: Context, private val db: AppDatabase) {
 
         val settings = db.settingsDao().observe().first() ?: SettingsEntity()
         val appHabits = db.habitDao().observeHabits().first().filter { it.packageName != null }
+        val tracked = appHabits.mapNotNull { it.packageName }.toSet()
+
+        db.usageDao().saveAll(
+            usedMillis.filterKeys { it in tracked }.map { (pkg, ms) ->
+                UsageMinutesEntity(packageName = pkg, day = todayEpoch, millis = ms)
+            }
+        )
+
         val checkedIds = db.checkInDao().observeForDay(todayEpoch).first().map { it.habitId }.toSet()
 
         for (habit in appHabits) {

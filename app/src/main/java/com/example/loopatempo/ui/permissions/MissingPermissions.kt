@@ -38,6 +38,7 @@ import com.example.loopatempo.notify.StreakNotifier
 import com.example.loopatempo.ui.components.HeaderCard
 import com.example.loopatempo.ui.components.ShieldCard
 import com.example.loopatempo.ui.components.verticalScrollbar
+import com.example.loopatempo.ui.onboarding.SetupGuideButton
 
 data class FixItem(
     val title: String,
@@ -143,6 +144,7 @@ fun FixScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         HeaderCard(title = "Fix", onBack = onBack)
+        TrackingStatusCard()
         items.forEach { item ->
             ShieldCard(modifier = Modifier.fillMaxWidth()) {
                 Column(
@@ -164,6 +166,7 @@ fun FixScreen(contentPadding: PaddingValues, onBack: () -> Unit) {
                     }
                 }
             }
+            SetupGuideButton()
         }
     }
 }

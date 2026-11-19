@@ -42,6 +42,7 @@ class TrackingService : Service() {
                         break
                     }
                     AppStreakSync(this@TrackingService, app.database).run()
+                    app.repository.savePref(TrackingStatus.HEARTBEAT_KEY, System.currentTimeMillis().toString())
                     delay(CHECK_INTERVAL_MS)
                 }
             }

@@ -24,6 +24,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +41,8 @@ import com.example.loopatempo.service.BackgroundTracking
 import com.example.loopatempo.ui.MainApp
 import com.example.loopatempo.ui.components.HeaderCard
 import com.example.loopatempo.ui.components.ShieldCard
+import com.example.loopatempo.ui.onboarding.ONBOARDING_KEY
+import com.example.loopatempo.ui.onboarding.OnboardingScreen
 import com.example.loopatempo.ui.theme.LoopATempoTheme
 import kotlinx.coroutines.launch
 
@@ -74,12 +77,17 @@ fun hasUsageAccess(context: Context): Boolean {
     return mode == AppOpsManager.MODE_ALLOWED
 }
 
+private const val LOADING = "LOADING"
+
 @Composable
 fun LoopATempoApp(repository: HabitRepository) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val scope = rememberCoroutineScope()
     val settings by repository.observeSettings().collectAsStateWithLifecycle(initialValue = null)
     val habits by repository.observeHabits().collectAsStateWithLifecycle(initialValue = emptyList())
+    val onboarding by repository.observePref(ONBOARDING_KEY)
+        .collectAsStateWithLifecycle(initialValue = LOADING)
     var granted by remember { mutableStateOf(hasUsageAccess(context)) }
     val keepAlive = settings?.keepAlive ?: false
     val settingsLoaded = settings != null
@@ -107,7 +115,14 @@ fun LoopATempoApp(repository: HabitRepository) {
         }
     }
 
-    if (granted) MainApp(repository) else UsageAccessScreen()
+    when {
+        onboarding == LOADING -> Unit
+        onboarding != "YES" -> OnboardingScreen(
+            onFinish = { scope.launch { repository.savePref(ONBOARDING_KEY, "YES") } }
+        )
+        granted -> MainApp(repository)
+        else -> UsageAccessScreen()
+    }
 }
 
 @Composable

@@ -2,7 +2,6 @@ package com.example.loopatempo.ui.analytics
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,10 +23,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -39,14 +40,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.loopatempo.data.AppMinutes
 import com.example.loopatempo.data.CheckInEntity
 import com.example.loopatempo.data.HabitEntity
 import com.example.loopatempo.data.HabitStats
+import com.example.loopatempo.data.UsageMinutesEntity
 import com.example.loopatempo.data.buildAnalytics
+import com.example.loopatempo.data.buildAppMinutes
 import com.example.loopatempo.data.buildMonthStats
+import com.example.loopatempo.data.formatWeekdays
 import com.example.loopatempo.data.monthsWithData
+import com.example.loopatempo.data.productiveWeekdays
+import com.example.loopatempo.data.productiveWeekdaysIn
+import com.example.loopatempo.share.shareAnalyticsCard
+import com.example.loopatempo.share.shareStreakCard
 import com.example.loopatempo.ui.components.AppIcon
 import com.example.loopatempo.ui.components.HeaderCard
 import com.example.loopatempo.ui.components.SectionDivider
@@ -60,20 +70,39 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
-import com.example.loopatempo.data.formatWeekdays
-import com.example.loopatempo.data.productiveWeekdays
-import com.example.loopatempo.data.productiveWeekdaysIn
 
 @Composable
 fun AnalyticsScreen(
     habits: List<HabitEntity>,
     checkIns: List<CheckInEntity>,
+    usage: List<UsageMinutesEntity>,
     contentPadding: PaddingValues
 ) {
+    val context = LocalContext.current
     val today = LocalDate.now()
     val summary = remember(habits, checkIns) { buildAnalytics(habits, checkIns) }
     val allTimeWeekdays = remember(checkIns) { productiveWeekdays(checkIns) }
+    val appMinutes = remember(habits, usage) { buildAppMinutes(habits, usage) }
     val scroll = rememberScrollState()
+
+    val appShare = summary.bestApp?.let { best ->
+        { shareStreakCard(context, best.habit, best.longestStreak) }
+    }
+    val customShare = summary.bestCustom?.let { best ->
+        { shareStreakCard(context, best.habit, best.longestStreak) }
+    }
+    val summaryLines = listOf(
+        "Active days: ${summary.activeDays}",
+        "Apps: ${summary.appCount}  ·  Custom tasks: ${summary.customCount}",
+        "Best app streak: " +
+                (summary.bestApp?.let { "${it.habit.name} · ${it.longestStreak} days" } ?: "none yet"),
+        "Best custom streak: " +
+                (summary.bestCustom?.let { "${it.habit.name} · ${it.longestStreak} days" } ?: "none yet"),
+        "All-time productive weekday: ${formatWeekdays(allTimeWeekdays)}"
+    )
+    val summaryShare: () -> Unit = {
+        shareAnalyticsCard(context, "${summary.totalCheckIns} check-ins", summaryLines)
+    }
 
     Column(
         modifier = Modifier
@@ -86,12 +115,16 @@ fun AnalyticsScreen(
     ) {
         HeaderCard(title = "Analytics")
 
-        StatCard(title = "Best streak on app") {
+        StatCard(title = "Best streak on app", onShare = appShare) {
             BestStreakRow(summary.bestApp, "No app streaks yet")
         }
 
-        StatCard(title = "Best streak on custom task") {
+        StatCard(title = "Best streak on custom task", onShare = customShare) {
             BestStreakRow(summary.bestCustom, "No custom task streaks yet")
+        }
+
+        StatCard(title = "Minutes per app") {
+            AppMinutesList(appMinutes)
         }
 
         StatCard(title = "Check-ins by weekday") {
@@ -105,7 +138,7 @@ fun AnalyticsScreen(
 
         MonthlyReviewCard(checkIns = checkIns, today = today)
 
-        StatCard(title = "Summary") {
+        StatCard(title = "Summary", onShare = summaryShare) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -145,13 +178,25 @@ fun AnalyticsScreen(
 }
 
 @Composable
-private fun StatCard(title: String, content: @Composable () -> Unit) {
+private fun StatCard(title: String, onShare: (() -> Unit)? = null, content: @Composable () -> Unit) {
     ShieldCard(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            SectionDivider(title)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(modifier = Modifier.weight(1f)) {
+                    SectionDivider(title)
+                }
+                if (onShare != null) {
+                    IconButton(onClick = onShare) {
+                        Icon(imageVector = Icons.Filled.Share, contentDescription = "Share $title")
+                    }
+                }
+            }
             content()
         }
     }
@@ -161,17 +206,58 @@ private fun StatCard(title: String, content: @Composable () -> Unit) {
 private fun BestStreakRow(best: HabitStats?, emptyText: String) {
     if (best == null) {
         Text(emptyText, style = MaterialTheme.typography.bodyLarge)
-        return
+    } else {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            HabitGlyph(best.habit, Modifier.size(40.dp))
+            Spacer(Modifier.width(12.dp))
+            Column {
+                Text(best.habit.name, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = "${best.longestStreak} days in a row",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
     }
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        HabitGlyph(best.habit, Modifier.size(40.dp))
-        Spacer(Modifier.width(12.dp))
-        Column {
-            Text(best.habit.name, style = MaterialTheme.typography.titleMedium)
-            Text(
-                text = "${best.longestStreak} days in a row",
-                style = MaterialTheme.typography.bodyMedium
-            )
+}
+
+@Composable
+private fun AppMinutesList(items: List<AppMinutes>) {
+    if (items.isEmpty()) {
+        Text(
+            text = "No app time recorded yet. It appears once an app you added is used.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    } else {
+        val max = items.first().totalMillis.coerceAtLeast(1L)
+        val total = items.sumOf { it.totalMillis }
+        Text(
+            text = "Total: ${formatDuration(total)}",
+            style = MaterialTheme.typography.bodyMedium
+        )
+        items.take(8).forEach { item ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                HabitGlyph(item.habit, Modifier.size(28.dp))
+                Spacer(Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            text = item.habit.name,
+                            style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = formatDuration(item.totalMillis),
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
+                    LinearProgressIndicator(
+                        progress = { item.totalMillis.toFloat() / max },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
         }
     }
 }
@@ -387,4 +473,9 @@ private fun HabitGlyph(habit: HabitEntity, modifier: Modifier) {
     } else {
         HabitIcon(habit.iconKey, modifier)
     }
+}
+
+private fun formatDuration(millis: Long): String {
+    val minutes = millis / 60_000
+    return if (minutes < 60) "$minutes min" else "${minutes / 60} h ${minutes % 60} min"
 }

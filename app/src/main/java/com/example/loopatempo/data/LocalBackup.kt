@@ -11,7 +11,7 @@ import org.json.JSONObject
 
 object LocalBackup {
     private const val APP_NAME = "LoopATempo"
-    private const val FORMAT_VERSION = 1
+    private const val FORMAT_VERSION = 2
 
     fun isLoopATempoBackup(json: String): Boolean =
         runCatching { JSONObject(json).optString("app") == APP_NAME }.getOrDefault(false)
@@ -26,7 +26,6 @@ object LocalBackup {
             root.put(
                 "settings",
                 JSONObject()
-                    .put("nickname", s.nickname)
                     .put("defaultThresholdMinutes", s.defaultThresholdMinutes)
                     .put("darkTheme", s.darkTheme)
                     .put("notificationsEnabled", s.notificationsEnabled)
@@ -68,6 +67,17 @@ object LocalBackup {
         }
         root.put("prefs", prefs)
 
+        val usage = JSONArray()
+        db.usageDao().getAll().forEach { u ->
+            usage.put(
+                JSONObject()
+                    .put("packageName", u.packageName)
+                    .put("day", u.day)
+                    .put("millis", u.millis)
+            )
+        }
+        root.put("usageMinutes", usage)
+
         return root.toString()
     }
 
@@ -92,9 +102,9 @@ object LocalBackup {
                 packageName = h.optNullableString("packageName"),
                 thresholdMinutes = if (h.isNull("thresholdMinutes")) null else h.getInt("thresholdMinutes"),
                 createdAt = h.getLong("createdAt"),
+                iconKey = iconKey,
                 reminderMinutes = if (h.isNull("reminderMinutes")) null else h.getInt("reminderMinutes"),
-                website = h.optNullableString("website"),
-                iconKey = iconKey
+                website = h.optNullableString("website")
             )
         }
 
@@ -110,10 +120,19 @@ object LocalBackup {
             PrefEntity(prefKey = p.getString("key"), prefValue = p.getString("value"))
         }
 
+        val usageArray = root.optJSONArray("usageMinutes") ?: JSONArray()
+        val usage = (0 until usageArray.length()).map { i ->
+            val u = usageArray.getJSONObject(i)
+            UsageMinutesEntity(
+                packageName = u.getString("packageName"),
+                day = u.getLong("day"),
+                millis = u.getLong("millis")
+            )
+        }
+
         val s = root.optJSONObject("settings")
         val settings = SettingsEntity(
             id = 0,
-            nickname = s?.optString("nickname", "") ?: "",
             defaultThresholdMinutes = s?.optInt("defaultThresholdMinutes", 5) ?: 5,
             darkTheme = s?.optBoolean("darkTheme", true) ?: true,
             notificationsEnabled = s?.optBoolean("notificationsEnabled", false) ?: false,
@@ -126,12 +145,14 @@ object LocalBackup {
         )
 
         db.withTransaction {
+            db.usageDao().deleteAll()
             db.checkInDao().deleteAll()
             db.habitDao().deleteAll()
             db.settingsDao().deleteAll()
             db.prefDao().deleteAll()
             db.habitDao().insertAll(habits)
             db.checkInDao().insertAll(checkIns)
+            db.usageDao().saveAll(usage)
             db.settingsDao().save(settings)
             db.prefDao().saveAll(prefs)
         }
